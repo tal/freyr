@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
+require 'freyr'
+require 'pp'
+
+if (i = ARGV.index('-f')) && ARGV[i+1]
+  file = ARGV[i+1]
+  ARGV.delete_at(i)
+  ARGV.delete_at(i)
+end
+
+file ||= File.expand_path('Freyrfile')
+
+unless File.exist?(file)
+  puts ' ** No Freyrfile found'
+  exit
+end
+
+Freyr::Runner.add_file(file)
+
+begin
+  runner = Freyr::Runner.find_from_id(ARGV[1])
+  puts runner.inspect
+rescue ArgumentError => e
+  arr = ARGV[1].split(':')
+  variant = arr.last
+  type = arr.first
+  puts " ** Unable to find runner of type #{type} with variant #{variant}"
+end
+
+unless runner
+  puts ' ** No runner found with name '+ARGV[1]
+  exit
+end
+
+case ARGV[0]
+when 'run'
+  # runner.start
+end

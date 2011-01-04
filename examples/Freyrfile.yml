@@ -1,0 +1,19 @@
+# merb:port:8000
+merb:
+  start: 'merb -p {{port}}'
+  variants:
+    port: !ruby/range 
+      begin: 8000
+      end: 8039
+
+# workers:one,two,three
+workers:
+  start: rake resque:work
+  variants:
+    "one,two,three":
+      env:
+        queue: "one,two,three"
+      instances: 3
+    foo:
+      env:
+        queue: "foo,bar,baz"
