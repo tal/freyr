@@ -208,7 +208,7 @@ module Freyr
     def start
       puts %Q{Running #{id} - #{start_command.inspect}}
       Freyr::Thread.new_instance(:id => id) do
-        `#{start_command}`
+        exec start_command}
       end
     end
     

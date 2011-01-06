@@ -1,4 +1,8 @@
+require 'rubygems'
+require 'forwardable'
+
 module Freyr
-  autoload :Thread, 'freyr/thread'
-  autoload :Runner, 'freyr/script'
 end
+
+require 'freyr/service'
+require 'freyr/command'
