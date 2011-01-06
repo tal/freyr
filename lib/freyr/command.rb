@@ -125,7 +125,7 @@ module Freyr
       return unless proc_match
       
       pids = `ps -eo pid,command`.split("\n").inject({}) do |r, pid|
-        if m = pid.match(/^(\d+)\s(.+)$/)
+        if m = pid.match(/^\s*(\d+)\s(.+)$/)
           r[m[2]] = m[1].to_i
         end
         r
