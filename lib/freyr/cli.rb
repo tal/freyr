@@ -9,7 +9,7 @@ module Freyr
       get_services
     end
     
-    class_option :'config-file', :desc => 'config file(s) to use', :type => :array, :default => ['Freyrfile','.freyrrc']
+    class_option :'config-file', :desc => 'config file to use', :type => :string
     
     desc 'update_pid', 'Update pid from proc_match (good to use if service already launched)'
     def update_pid(name)
@@ -164,7 +164,11 @@ module Freyr
     end
     
     def get_services
-      options['config-file'].each do |f|
+      if options['config-file'] && !options['config-file'].empty?
+        Service.add_file(options['config-file'])
+      end
+      
+      ['Freyrfile','.freyrrc'].each do |f|
         Service.add_file(f)
       end
     end
