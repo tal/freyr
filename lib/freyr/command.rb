@@ -97,6 +97,8 @@ module Freyr
       
       require_admin
       
+      total_time = Time.now
+      
       pid = spawn(command)
         
       @pid = pid
@@ -107,10 +109,8 @@ module Freyr
         puts "Waiting for pid from match of #{proc_match.inspect}"
         
         start = Time.now
-        
         until (pid = pid_from_procname) || (Time.now-start) > 40
-          print '.'
-          STDOUT.flush
+          print '.'; STDOUT.flush
           sleep(0.2)
         end
         
@@ -119,10 +119,29 @@ module Freyr
         puts '*'
         
         @pid = pid
-        
       end
       
       puts "PID of new #{name} process is #{@pid}"
+      
+      if ping
+        pinger = Pinger.new(self)
+        
+        puts '',"Waiting for response from #{pinger.url}"
+        
+        # Move this pinger code somewhere else
+        start = Time.now
+        begin
+          print '.'; STDOUT.flush
+          pinger.ping
+          sleep(0.6)
+        end until pinger.server_probably_launched? || (Time.now-start) > 40
+        
+        puts '*'
+        
+        puts "Last response recieved with code #{pinger.response.code}"
+      end
+      
+      puts "Launch took about #{(Time.now-total_time).ceil} seconds"
       
       save
       
@@ -160,7 +179,6 @@ module Freyr
     end
     
     def restart!
-      puts restart.inspect
       if restart
         chdir
         system(restart)
