@@ -1,0 +1,3 @@
+service :sleep do
+  start 'sudo sleep 20'
+end

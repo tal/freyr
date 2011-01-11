@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{freyr}
-  s.version = "0.1.0"
+  s.version = "0.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tal Atlas"]
-  s.date = %q{2011-01-06}
+  s.date = %q{2011-01-11}
   s.default_executable = %q{freyr}
   s.description = %q{Define all services you need to run and this will launch,daemonize,and monitor them for you.}
   s.email = %q{me@tal.by}
@@ -21,16 +21,24 @@ Gem::Specification.new do |s|
   s.files = [
     ".document",
     ".irbrc",
+    "Freyrfile",
     "LICENSE",
     "README.rdoc",
     "Rakefile",
     "VERSION",
     "bin/freyr",
+    "freyr.gemspec",
     "lib/freyr.rb",
     "lib/freyr/cli.rb",
+    "lib/freyr/cli/helpers.rb",
+    "lib/freyr/cli/launching.rb",
+    "lib/freyr/cli/management.rb",
+    "lib/freyr/cli/monitor.rb",
     "lib/freyr/command.rb",
     "lib/freyr/script.rb",
     "lib/freyr/service.rb",
+    "lib/freyr/service_info.rb",
+    "lib/freyr/service_validator.rb",
     "lib/freyr/thread.rb",
     "spec/freyr_spec.rb",
     "spec/spec.opts",

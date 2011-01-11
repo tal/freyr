@@ -1,0 +1,93 @@
+module Freyr
+  class CLI < Thor
+  private
+    # Ugh, this is ugly, colorizing stuff is rough
+    def list_all_services(args={})
+      args[:highlight_name] = (args[:highlight_name]||[]).collect {|n| n.to_s}
+      args[:highlight_state] = (args[:highlight_state]||[]).collect {|n| n.to_s}
+      
+      max_length = 0
+      
+      groups_join = '|'
+      
+      lengths = Service.s.collect do |s|
+        n = "   #{s.name}(#{s.groups.join(groups_join)})"
+        max_length = n.length if n.length > max_length
+        n.length
+      end
+      
+      max_length += 3 # min distance between name and group
+      
+      strs = []
+      Service.s.each_with_index do |s,i|
+        str = '  '
+        if s.sudo
+          str << set_color('*', :yellow)
+        else
+          str << ' '
+        end
+        
+        name = set_color(s.name, :blue)
+        if args[:highlight_name].include?(s.name.to_s)
+          name = set_color(name, :on_white)
+        end
+        str << name
+        str << " "*(max_length - lengths[i])
+        if s.groups.empty?
+          str << '  '
+        else
+          str <<  '('
+          s.groups.each do |g|
+            str << set_color(g,:red)
+            next if g == s.groups.last
+            str << groups_join
+          end
+          str << ')'
+        end
+        
+        str << ' - '
+        if s.alive?
+          state = set_color(' Alive ', :green, false)
+        else
+          state = set_color(' Dead ', :red, true)
+        end
+        
+        if args[:highlight_state].include?(s.name.to_s)
+          state = set_color(state, :on_white)
+        end
+        
+        str << state
+        
+        strs << str
+      end
+      
+      strs
+    end
+    
+    def set_color *args
+      @shell.set_color(*args)
+    end
+    
+    def get_from_name name
+      if options.namespace && s = Service["#{options.namespace}:#{name}"].first
+        [s] # only pickng one because if it's namespaced it's not a group
+      else
+        Service[name]
+      end
+    end
+    
+    def get_services
+      if options['config-file'] && !options['config-file'].empty?
+        if File.exist?(options['config-file'])
+          Service.add_file(options['config-file'])
+        else
+          say("Can't find file #{options['config-file']}",:red) 
+        end
+      end
+      
+      ['Freyrfile','.freyrrc','~/.freyrrc'].each do |f|
+        Service.add_file(f)
+      end unless options['ignore-local']
+    end
+  end
+end

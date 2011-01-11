@@ -9,7 +9,7 @@ module Freyr
       @command = Command.new(self)
     end
     
-    def_delegators :@service_info, :name, :dir, :log_cmd, :log, :err_log_cmd, :err_log, :groups, :proc_match, :restart_cmd
+    def_delegators :@service_info, *ServiceInfo::ATTRS
     def_delegator  :@service_info, :start, :start_command
     
     def env
@@ -17,7 +17,7 @@ module Freyr
     end
     
     def log
-      (@service_info && @service_info.log) || File.join(Command::FREYR_PIDS,"#{name}.log")
+      @service_info.log || File.join(command.file_dir,"#{name}.log")
     end
     
     def start!
@@ -88,60 +88,6 @@ module Freyr
         end
       end
       
-    end
-    
-  end
-  
-  class ServiceInfo
-    attr_reader :groups
-    
-    def initialize(name=nil, args={}, &block)
-      @groups = []
-      if name.is_a?(Hash)
-        @name = name.keys.first
-        @groups << name[@name]
-      else
-        @name = name
-      end
-      
-      instance_eval(&block)
-    end
-    
-    def group(*val)
-      @groups |= val
-    end
-    
-    def method_missing *args
-      key, val = *args
-      
-      key = key.to_s.gsub(/\=$/,'')
-      if val
-        instance_variable_set("@#{key}", val)
-      else
-        instance_variable_get("@#{key}")
-      end
-    end
-    
-    class << self
-      
-      def from_file file
-        file = File.expand_path(file)
-        return [] unless File.exist?(file)
-        @added_services = []
-        instance_eval(File.open(file).read)
-        @added_services
-      end
-      
-    private
-      
-      def namespace name
-        @namespace = name
-      end
-      
-      def service name=nil, &blk
-        name = "#{@namespace}:#{name}" if @namespace
-        @added_services << new(name,&blk)
-      end
     end
     
   end

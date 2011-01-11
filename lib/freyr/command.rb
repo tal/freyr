@@ -3,7 +3,8 @@ module Freyr
   class Command
     extend Forwardable
     
-    FREYR_PIDS = ENV['USER'] == 'root' ? '/var/run/freyr' : File.expand_path('.freyr', '~')
+    ROOT_PIDS = '/var/run/freyr'
+    FREYR_PIDS = ENV['USER'] == 'root' ? ROOT_PIDS : File.expand_path('.freyr', '~')
     
     if !File.exist?(FREYR_PIDS)
       Dir.mkdir(FREYR_PIDS)
@@ -12,14 +13,13 @@ module Freyr
       Dir.mkdir(FREYR_PIDS)
     end
     
-    attr_reader :command, :name, :service
-    
-    [:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
-      :uid,:gid,:chroot,:proc_match,:restart_cmd].each do |meth|
+    ServiceInfo::ATTRS.each do |meth|
       define_method(meth) do |*args|
         @service.__send__(meth,*args) if @service
       end
     end
+    
+    attr_reader :command, :name, :service
     
     def initialize(name, command=nil, args = {})
       if name.is_a?(Service)
@@ -36,7 +36,11 @@ module Freyr
     end
     
     def pid_file
-      File.join(FREYR_PIDS,"#{@name}.pid")
+      File.join(file_dir,"#{@name}.pid")
+    end
+    
+    def file_dir
+      admin? ? ROOT_PIDS : FREYR_PIDS
     end
     
     def read_pid
@@ -55,14 +59,23 @@ module Freyr
       Process.getpgid(pid)
       true
     rescue Errno::ESRCH
+      retried = false unless defined?(retried)
+      
+      if !retried && @pid = pid_from_procname
+        save
+        retried = true
+        retry
+      end
+      
       if pid(true)
-        File.delete(pid_file)
+        File.delete(pid_file) unless admin? && !is_root?
       end
       
       false
     end
     
     def delete_if_dead
+      return if admin? && !is_root?
       File.delete(pid_file) unless alive?
     end
     
@@ -80,7 +93,9 @@ module Freyr
     
     def run!
       return unless command
-      kill if alive?
+      kill! if alive?
+      
+      require_admin
       
       pid = spawn(command)
         
@@ -136,24 +151,44 @@ module Freyr
       end
     end
     
-    def kill!(sig='KILL')
-      if pid(true)
-        result = Process.kill(sig, pid)
-      end
+    def kill!(sig=nil)
+      sig ||= stop_sig || 'KILL'
       
-      result
+      if pid(true)
+        Process.kill(sig, pid)
+      end
     end
     
     def restart!
-      if restart_cmd
-        `restart_cmd`
+      puts restart.inspect
+      if restart
+        chdir
+        system(restart)
         update_pid
+      elsif restart_sig
+        kill!(restart_sig)
       else
         run!
       end
     end
     
+    def admin?
+      sudo
+    end
+    
     private
+    
+    def require_admin
+      raise AdminRequired if admin? && !is_root?
+    end
+    
+    def is_root?
+      ENV['USER'] == 'root'
+    end
+    
+    def chdir
+      Dir.chdir File.expand_path(dir||'/')
+    end
     
     def spawn(command)
       fork do
@@ -166,7 +201,7 @@ module Freyr
         # ::Process.groups = [gid_num] if self.gid
         # ::Process::Sys.setgid(gid_num) if self.gid
         # ::Process::Sys.setuid(uid_num) if self.uid
-        Dir.chdir File.expand_path(dir||'/')
+        chdir
         $0 = "freyr - #{name} (#{command})"
         STDIN.reopen "/dev/null"
         if log_cmd
@@ -196,5 +231,7 @@ module Freyr
     end
     
   end
+  
+  class AdminRequired < Errno::EACCES; end
   
 end
