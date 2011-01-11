@@ -171,6 +171,7 @@ module Freyr
     end
     
     def kill!(sig=nil)
+      require_admin
       sig ||= stop_sig || 'KILL'
       
       if pid(true)
@@ -179,6 +180,8 @@ module Freyr
     end
     
     def restart!
+      require_admin
+      
       if restart
         chdir
         system(restart)

@@ -21,11 +21,12 @@ module Freyr
     end
     
     def start!
+      return unless start_command
       command.run! unless alive?
     end
     
     def stop!
-      command.kill!
+      command.kill! if stop
     end
     
     def restart!
