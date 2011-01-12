@@ -4,10 +4,11 @@ module Freyr
     
     ATTRS = [:name,:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
               :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
-              :restart_sig,:sudo,:groups,:ping]
+              :restart_sig,:sudo,:groups,:ping,:also]
     
     def initialize(name=nil, args={}, &block)
       @groups = []
+      @also = []
       if name.is_a?(Hash)
         @name = name.keys.first
         @groups << name[@name]

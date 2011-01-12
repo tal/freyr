@@ -1,5 +1,6 @@
 module Freyr
   class CLI < Thor
+    
   private
     # Ugh, this is ugly, colorizing stuff is rough
     def list_all_services(args={})
@@ -57,6 +58,23 @@ module Freyr
         end
         
         str << state
+        
+        if args[:ping] && s.alive? && pinger = s.ping!
+          png = "(#{pinger.code})"
+          if pinger.success?
+            png = set_color(png, :green, false)
+          elsif pinger.server_error?
+            png = set_color(png, :yellow, true)
+          else
+            png = set_color(png, :red, true)
+          end
+          
+          str << png
+        elsif args[:ping]
+          str << ' '*'(123)'.size
+        end
+        
+        str << "\n" #if str =~ /\s$/ # Thor's display only adds a new line if the last char isn't a space
         
         strs << str
       end

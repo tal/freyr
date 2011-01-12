@@ -122,6 +122,7 @@ module Freyr
       end
       
       puts "PID of new #{name} process is #{@pid}"
+      save
       
       if ping
         pinger = Pinger.new(self)
@@ -134,18 +135,28 @@ module Freyr
           print '.'; STDOUT.flush
           pinger.ping
           sleep(0.6)
-        end until pinger.server_probably_launched? || (Time.now-start) > 40
+        end until pinger.server_probably_launched? || (Time.now-start) > 40 || !alive?
         
-        puts '*'
-        
-        puts "Last response recieved with code #{pinger.response.code}"
+        if alive?
+          
+          if pinger.response
+            puts '*',"Last response recieved with code #{pinger.response.code}"
+          else
+            puts 'x',"Couldn't reach #{name} service"
+          end
+        else
+          puts 'x'
+        end
       end
       
-      puts "Launch took about #{(Time.now-total_time).ceil} seconds"
-      
-      save
-      
-      @pid
+      if alive?
+        puts "Launch took about #{(Time.now-total_time).ceil} seconds"
+        
+        @pid
+      else
+        puts "#{name} service wasn't launched correctly. For details see: #{log}"
+        delete_if_dead
+      end
     end
     
     def update_pid

@@ -2,8 +2,9 @@ module Freyr
   class CLI < Thor
     
     desc 'list', 'lists all available services:'
+    method_option :ping, :type => :boolean, :default => false, :aliases => '-p', :desc => 'also ping each service which can ping'
     def list
-      strs = list_all_services
+      strs = list_all_services(:ping => options.ping?)
       
       if strs.empty?
         say "No services available", :red
@@ -28,6 +29,28 @@ module Freyr
       end
     end
     
+    desc 'ping', 'see the response from pinging the url'
+    def ping(name)
+      service = get_from_name(name).first
+      
+      if service
+        if service.ping
+          pinger = Pinger.new(service)
+          resp = pinger.ping
+          if pinger.success?
+            say "Up and running", :green
+          elsif pinger.server_error?
+            say "500 Error"
+          else
+            say "Returned #{resp.code} code", :red
+          end
+        else
+          say 'No url to ping for this service'
+        end
+      else
+        say "Can't find the #{name} service", :red
+      end
+    end
     
   end
 end

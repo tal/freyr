@@ -41,6 +41,14 @@ module Freyr
       command.alive?
     end
     
+    def ping!
+      if ping
+        pinger = Pinger.new(self)
+        pinger.ping
+        pinger
+      end
+    end
+    
     def tail!(size = 600, follow = true)
       f = follow ? 'f' : ''
       exec("tail -#{size}#{f} #{log}")
