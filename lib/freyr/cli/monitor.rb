@@ -16,10 +16,10 @@ module Freyr
       end
     end
     
-    desc 'tail', 'read stdout of the service'
+    desc 'tail [SERVICE=dirname]', 'read stdout of the service'
     method_option :lines, :type => :numeric, :default => 50, :desc => 'Number of lines to show on initial tail'
     method_option :'no-follow', :type => :boolean, :default => false, :desc => 'Disable auto follow, just print tail and exit'
-    def tail(name)
+    def tail(name=nil)
       services = get_from_name(name)
       if !services.empty?
         
@@ -30,7 +30,7 @@ module Freyr
     end
     
     desc 'ping', 'see the response from pinging the url'
-    def ping(name)
+    def ping(name=nil)
       service = get_from_name(name).first
       
       if service
@@ -41,8 +41,10 @@ module Freyr
             say "Up and running", :green
           elsif pinger.server_error?
             say "500 Error"
-          else
+          elsif resp
             say "Returned #{resp.code} code", :red
+          else
+            say "Couldn't reach service", :red
           end
         else
           say 'No url to ping for this service'

@@ -1,8 +1,8 @@
 module Freyr
   class CLI < Thor
     
-    desc 'update_pid', 'Update pid from proc_match (good to use if service already launched)'
-    def update_pid(name)
+    desc 'update_pid [SERVICE=dirname]', 'Update pid from proc_match (good to use if service already launched)'
+    def update_pid(name=nil)
       services = get_from_name(name)
       if s = services.first
         if pid = s.command.update_pid

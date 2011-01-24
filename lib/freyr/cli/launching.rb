@@ -2,8 +2,8 @@ module Freyr
   class CLI < Thor
     # TODO: DRY up start/restart/stop commands
     
-    desc 'start', 'Start particular service'
-    def start(name)
+    desc 'start [SERVICE=dirname]', 'Start particular service'
+    def start(name=nil)
       services = get_from_name(name)
       if !services.empty?
         names = services.collect {|s| s.name}
@@ -25,8 +25,8 @@ module Freyr
       end
     end
     
-    desc 'stop', 'Stop particular service'
-    def stop(name)
+    desc 'stop [SERVICE=dirname]', 'Stop particular service'
+    def stop(name=nil)
       services = get_from_name(name)
       if !services.empty?
         names = services.collect {|s| s.name}
@@ -47,8 +47,8 @@ module Freyr
       end
     end
     
-    desc 'restart', 'restart particular service'
-    def restart(name)
+    desc 'restart [SERVICE=dirname]', 'restart particular service'
+    def restart(name=nil)
       services = get_from_name(name)
       if !services.empty?
         names = services.collect {|s| s.name}
