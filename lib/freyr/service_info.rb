@@ -27,6 +27,10 @@ module Freyr
       @groups |= val
     end
     
+    def also(*val)
+      @also |= val
+    end
+    
     MODIFIERS = {
       :start => :_sudo_checker,
       :restart => :_sudo_checker,
