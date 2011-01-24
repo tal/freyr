@@ -26,7 +26,7 @@ module Freyr
     end
     
     def stop!
-      command.kill! if stop
+      command.kill! if start_command
     end
     
     def restart!
@@ -56,6 +56,13 @@ module Freyr
     
     def describe
       %Q{#{name}(#{groups.join(',')}) - #{start_command}}
+    end
+    
+    def matches?(n)
+      n = n.to_s
+      return true if name.to_s == n
+      
+      also.find {|a| a.to_s == n}
     end
     
     class << self
@@ -90,7 +97,7 @@ module Freyr
       end
       
       def [](name)
-        if ser = s.find {|sr| sr.name.to_s == name.to_s}
+        if ser = s.find {|sr| sr.matches?(name)}
           [ser]
         else
           s.select {|sr| sr.is_group?(name)}
