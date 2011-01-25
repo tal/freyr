@@ -51,6 +51,13 @@ by some method other than freyr or it restarted with a different pid.
 
 To see a complete list of options type in `freyr help`.
 
+## TODO
+
+* Growl notifications
+* Better error handling
+* Service definition validation
+* Plugin architecture
+
 ## Note on Patches/Pull Requests
  
 * Fork the project.
