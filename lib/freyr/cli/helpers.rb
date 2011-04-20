@@ -1,6 +1,11 @@
 module Freyr
   class CLI < Thor
     
+    def initialize(*)
+      super
+      get_services
+    end
+    
   private
     # Ugh, this is ugly, colorizing stuff is rough
     def list_all_services(args={})

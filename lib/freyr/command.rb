@@ -75,8 +75,7 @@ module Freyr
     end
     
     def delete_if_dead
-      return if admin? && !is_root?
-      File.delete(pid_file) unless alive?
+      !alive?
     end
     
     def save
@@ -145,7 +144,7 @@ module Freyr
             puts 'x',"Couldn't reach #{name} service"
           end
         else
-          puts 'x'
+          puts 'x', "Service died durring launch"
         end
       end
       

@@ -96,12 +96,26 @@ module Freyr
         @all_services += services
       end
       
-      def [](name)
-        if ser = s.find {|sr| sr.matches?(name)}
-          [ser]
-        else
-          s.select {|sr| sr.is_group?(name)}
+      def alive?(name)
+        !!self[name].find do |ser|
+          ser.alive?
         end
+      end
+      
+      def [](name)
+        group = ServiceGroup.new
+        
+        if ser = s.find {|sr| sr.matches?(name)}
+          group << ser
+        else
+          s.each do |sr|
+            if sr.is_group?(name)
+              group << sr
+            end
+          end
+        end
+        
+        group
       end
       
     end

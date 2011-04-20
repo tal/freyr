@@ -7,11 +7,6 @@ module Freyr
   class CLI < Thor
     include Thor::Actions
     
-    def initialize(*)
-      super
-      get_services
-    end
-    
     default_task :list
     class_option :'config-file', :desc => 'config file to use', :type => :string
     class_option :'ignore-local', :desc => "don't use the local Freyrfile or .freyrrc", :type => :boolean, :default => false
