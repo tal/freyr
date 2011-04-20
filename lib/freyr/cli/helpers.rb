@@ -92,13 +92,20 @@ module Freyr
     end
     
     def get_from_name name
-      name ||= Dir.pwd.match(/.*\/(.+)/)[1]
+      group = ServiceGroup.new
+      
+      unless name
+        s = Service.s.find {|svc| svc.dir == Dir.pwd}
+        return [s] if s
+      end
       
       if options.namespace && s = Service["#{options.namespace}:#{name}"].first
-        [s] # only pickng one because if it's namespaced it's not a group
+        group << s # only pickng one because if it's namespaced it's not a group
       else
-        Service[name]
+        group = Service[name]
       end
+      
+      group
     end
     
     def get_services
