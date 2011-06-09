@@ -40,8 +40,7 @@ module Freyr
     def restart(name=nil)
       services = get_from_name(name)
       if !services.empty?
-        
-        say "Restarting the " << set_color(names.join(', '), :blue) << ' services'
+        say "Restarting the " << set_color(services.collect {|s| s.name}.join(', '), :blue) << ' services'
         
         names = services.restart
         
