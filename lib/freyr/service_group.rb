@@ -61,7 +61,7 @@ module Freyr
         names.delete(s.name)
       end
       
-      name
+      names
     end
     
   end

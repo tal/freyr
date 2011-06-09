@@ -96,13 +96,15 @@ module Freyr
       
       unless name
         s = Service.s.find {|svc| svc.dir == Dir.pwd}
-        return [s] if s
+        return group << s if s
       end
       
       if options.namespace && s = Service["#{options.namespace}:#{name}"].first
         group << s # only pickng one because if it's namespaced it's not a group
       else
-        group = Service[name]
+        Service[name].each do |s|
+          group << s
+        end
       end
       
       group

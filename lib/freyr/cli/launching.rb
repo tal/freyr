@@ -16,7 +16,7 @@ module Freyr
         say "Can't find the #{name} service", :red
       end
     rescue AdminRequired
-      say "Please run in sudo to launch #{s.name}.", :red
+      say "Please run in sudo to launch #{name}.", :red
     end
     
     desc 'stop [SERVICE=dirname]', 'Stop particular service'
@@ -33,7 +33,7 @@ module Freyr
         say "Can't find the #{name} service", :red
       end  
     rescue AdminRequired
-      say "Please run in sudo to stop #{s.name}.", :red
+      say "Please run in sudo to stop #{name}.", :red
     end
     
     desc 'restart [SERVICE=dirname]', 'restart particular service'
@@ -50,7 +50,7 @@ module Freyr
       end
       
     rescue AdminRequired
-      say "Please run in sudo to launch #{s.name}.", :red
+      say "Please run in sudo to launch #{name}.", :red
     end
     
   end

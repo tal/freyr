@@ -223,15 +223,15 @@ module Freyr
     
     def spawn(command)
       fork do
-        # File.umask self.umask if self.umask
-        # uid_num = Etc.getpwnam(self.uid).uid if uid
-        # gid_num = Etc.getgrnam(self.gid).gid if gid
+        File.umask self.umask if self.umask
+        uid_num = Etc.getpwnam(self.uid).uid if uid
+        gid_num = Etc.getgrnam(self.gid).gid if gid
         
-        # ::Dir.chroot(self.chroot) if self.chroot
+        ::Dir.chroot(self.chroot) if self.chroot
         ::Process.setsid
-        # ::Process.groups = [gid_num] if self.gid
-        # ::Process::Sys.setgid(gid_num) if self.gid
-        # ::Process::Sys.setuid(uid_num) if self.uid
+        ::Process.groups = [gid_num] if self.gid
+        ::Process::Sys.setgid(gid_num) if self.gid
+        ::Process::Sys.setuid(uid_num) if self.uid
         chdir
         $0 = "freyr - #{name} (#{command})"
         STDIN.reopen "/dev/null"
