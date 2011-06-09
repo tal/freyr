@@ -4,7 +4,7 @@ module Freyr
     
     ATTRS = [:name,:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
               :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
-              :restart_sig,:sudo,:groups,:ping,:also,:dependencies]
+              :restart_sig,:sudo,:groups,:ping,:also,:dependencies,:read_log]
     
     def initialize(name=nil, args={}, &block)
       @groups = []

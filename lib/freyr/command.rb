@@ -237,8 +237,10 @@ module Freyr
         STDIN.reopen "/dev/null"
         if log_cmd
           STDOUT.reopen IO.popen(log_cmd, "a")
-        elsif log
+        elsif log && service.write_log?
           STDOUT.reopen log, "a"
+        else
+          STDOUT.reopen "/dev/null"
         end
         if err_log_cmd
           STDERR.reopen IO.popen(err_log_cmd, "a") 

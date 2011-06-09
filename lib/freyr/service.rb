@@ -17,7 +17,11 @@ module Freyr
     end
     
     def log
-      @service_info.log || File.join(command.file_dir,"#{name}.log")
+      @service_info.read_log || @service_info.log || File.join(command.file_dir,"#{name}.log")
+    end
+    
+    def write_log?
+      @service_info.log && !@service_info.read_log
     end
     
     def start!
@@ -51,6 +55,7 @@ module Freyr
     
     def tail!(size = 600, follow = true)
       f = follow ? 'f' : ''
+      Dir.chdir dir
       exec("tail -#{size}#{f} #{log}")
     end
     
