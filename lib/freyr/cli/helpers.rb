@@ -79,6 +79,19 @@ module Freyr
           str << ' '*'(123)'.size
         end
         
+        begin
+          proc_list = ProcessInfoList.new
+          
+          pid = s.command.pid
+          
+          proc = proc_list[pid.to_i]
+          
+          str << " CPU: #{proc.cpu}% - MEM: #{proc.mem}%"
+        rescue
+        end
+        
+        
+        
         str << "\n" #if str =~ /\s$/ # Thor's display only adds a new line if the last char isn't a space
         
         strs << str
