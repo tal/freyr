@@ -20,7 +20,7 @@ module Freyr
     end
     
     def mem_in_mb
-      @rss/1024
+      @rss/1024.0
     end
     
     class << self

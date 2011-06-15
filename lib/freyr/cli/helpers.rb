@@ -85,7 +85,7 @@ module Freyr
             
             proc = ProcessInfo[pid]
             
-            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb}mb" if proc
+            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb.to_i}mb" if proc
           # rescue => e
           end
         end
