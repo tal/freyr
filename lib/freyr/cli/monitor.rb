@@ -3,8 +3,9 @@ module Freyr
     
     desc 'list', 'lists all available services:'
     method_option :ping, :type => :boolean, :default => false, :aliases => '-p', :desc => 'also ping each service which can ping'
+    method_option :info, :type => :boolean, :default => false, :aliases => '-i', :desc => 'also get cpu and memory info'
     def list
-      strs = list_all_services(:ping => options.ping?)
+      strs = list_all_services(:ping => options.ping?, :procinfo => options.info?)
       
       if strs.empty?
         say "No services available", :red

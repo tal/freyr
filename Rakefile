@@ -12,7 +12,6 @@ begin
     gem.authors = ["Tal Atlas"]
     gem.add_development_dependency "rspec", ">= 1.2.9"
     gem.add_development_dependency "yard", ">= 0"
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
     gem.add_dependency 'thor', ">= 0.10"
   end
   Jeweler::GemcutterTasks.new
