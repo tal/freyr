@@ -81,14 +81,12 @@ module Freyr
         
         if args[:procinfo]
           begin
-            @proc_list ||= ProcessInfoList.new
-          
             pid = s.command.pid
-          
-            proc = @proc_list[pid.to_i]
-          
-            str << " CPU: #{proc.cpu}% - MEM: #{proc.mem}%" if proc
-          rescue => e
+            
+            proc = ProcessInfo[pid]
+            
+            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb}mb" if proc
+          # rescue => e
           end
         end
         
