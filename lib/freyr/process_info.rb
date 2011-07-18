@@ -19,6 +19,12 @@ module Freyr
       info
     end
     
+    def port
+      `lsof -p #{pid} -P | egrep TCP.+LISTEN`.match(/\*:(\d+)/)[1].to_i
+    rescue
+      nil
+    end
+    
     def mem_in_mb
       @rss/1024.0
     end
