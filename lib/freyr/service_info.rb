@@ -2,9 +2,20 @@ module Freyr
   class ServiceInfo
     attr_reader :groups
     
-    ATTRS = [:name,:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
-              :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
-              :restart_sig,:sudo,:groups,:ping,:also,:dependencies,:read_log]
+    class << self
+      def add_service_method *methods
+        Service.send :add_service_method, *methods
+        Command.send :add_service_method, *methods
+        methods.each do |method|
+          ATTRS << methods
+        end
+      end
+    end
+    
+    ATTRS = []
+    add_service_method :name,:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
+                        :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
+                        :restart_sig,:sudo,:groups,:ping,:also,:dependencies,:read_log
     
     def initialize(name=nil, args={}, &block)
       @groups = []
@@ -36,17 +47,18 @@ module Freyr
       @also |= val
     end
     
-    MODIFIERS = {
-      :start => :_sudo_checker,
-      :restart => :_sudo_checker,
-      :stop => :_sudo_checker
-    }
+    MODIFIERS = Hash.new {|h,k| h[k] = []}
+    MODIFIERS[:start] << :_sudo_checker
+    MODIFIERS[:stop] << :_sudo_checker
+    MODIFIERS[:restart] << :_sudo_checker
     
     def method_missing key, val=nil
       key = key.to_s.gsub(/\=$/,'').to_sym
       
       if val
-        val = send(MODIFIERS[key],val) if MODIFIERS[key]
+        MODIFIERS[key].each do |modifier|
+          val = send(modifier,val)
+        end
         instance_variable_set("@#{key}", val)
       else
         instance_variable_get("@#{key}")

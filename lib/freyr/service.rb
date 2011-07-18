@@ -1,6 +1,11 @@
 module Freyr
   class Service
     extend Forwardable
+    class << self
+      def add_service_method *methods
+        def_delegators :@service_info, *methods
+      end
+    end
     
     attr_reader :service_info, :command
     
@@ -9,8 +14,7 @@ module Freyr
       @command = Command.new(self)
     end
     
-    def_delegators :@service_info, *ServiceInfo::ATTRS
-    def_delegator  :@service_info, :start, :start_command
+    add_service_method :start, :start_command
     
     def env
       service_info.env || {}
@@ -93,7 +97,7 @@ module Freyr
         
         services = ServiceInfo.from_file(f).collect do |ser|
           raise 'Cannot have two things of the same name' if selectors.include?(ser.name)
-          names << ser.name
+          names |= [ser.name]
           @all_groups |= ser.groups
           new(ser)
         end

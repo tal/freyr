@@ -13,12 +13,6 @@ module Freyr
       Dir.mkdir(FREYR_PIDS)
     end
     
-    ServiceInfo::ATTRS.each do |meth|
-      define_method(meth) do |*args|
-        @service.__send__(meth,*args) if @service
-      end
-    end
-    
     attr_reader :command, :name, :service
     
     def initialize(name, command=nil, args = {})
@@ -263,6 +257,16 @@ module Freyr
       end
     end
     
+
+    class << self
+      def add_service_method *methods
+        methods.each do |meth|
+          define_method(meth) do |*args|
+            @service.__send__(meth,*args) if @service
+          end
+        end
+      end
+    end
   end
   
   class AdminRequired < Errno::EACCES; end
