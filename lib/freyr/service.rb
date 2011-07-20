@@ -14,7 +14,9 @@ module Freyr
       @command = Command.new(self)
     end
     
-    add_service_method :start, :start_command
+    def start_command
+      @service_info.start
+    end
     
     def env
       service_info.env || {}
