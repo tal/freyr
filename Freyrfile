@@ -1,3 +1,7 @@
 service :sleep do
+  start 'sleep 20'
+end
+
+service :sudosleep do
   start 'sudo sleep 20'
 end

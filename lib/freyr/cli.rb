@@ -11,6 +11,7 @@ module Freyr
     class_option :'config-file', :desc => 'config file to use', :type => :string
     class_option :'ignore-local', :desc => "don't use the local Freyrfile or .freyrrc", :type => :boolean, :default => false
     class_option :namespace, :type => :string, :desc => 'namespace to look in'
+    class_option :trace, :type => :boolean, :default => false
     map "-v" => :version
     
     desc 'version', 'displays current gem version'

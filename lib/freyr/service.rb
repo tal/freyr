@@ -61,8 +61,11 @@ module Freyr
     
     def tail!(size = 600, follow = true)
       f = follow ? 'f' : ''
-      Dir.chdir dir
-      exec("tail -#{size}#{f} #{log}")
+      if log
+        cmd = "tail -#{size}#{f} #{File.join(dir||'/',log)}"
+        Freyr.logger.debug("tailing cmd") {cmd.inspect}
+        exec("tail -#{size}#{f} #{log}")
+      end
     end
     
     def describe
@@ -97,10 +100,13 @@ module Freyr
       def add_file f
         s
         
+        Freyr.logger.debug('adding file') {f}
+        
         services = ServiceInfo.from_file(f).collect do |ser|
           raise 'Cannot have two things of the same name' if selectors.include?(ser.name)
           names |= [ser.name]
           @all_groups |= ser.groups
+          Freyr.logger.debug('adding service') {ser.name.inspect}
           new(ser)
         end
         

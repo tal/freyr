@@ -36,6 +36,7 @@ module Freyr
           end
         end
         
+        Freyr.logger.debug('starting service') {svc.name}
         pid = svc.start!
         names << svc.name if pid
       end
@@ -47,6 +48,7 @@ module Freyr
     def stop
       changed_names = collect {|s| s.name if s.alive?}.compact
       each do |svc|
+        Freyr.logger.debug('stopping service') {svc.name}
         svc.stop!
       end
       
@@ -57,6 +59,7 @@ module Freyr
       names = collect {|s| s.name}
       
       each do |s|
+        Freyr.logger.debug('restart service') {svc.name}
         s.restart!
         names.delete(s.name)
       end

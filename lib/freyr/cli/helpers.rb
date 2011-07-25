@@ -3,6 +3,11 @@ module Freyr
     
     def initialize(*)
       super
+      
+      if options.trace?
+        Freyr.logger = Logger.new(STDOUT)
+      end
+      
       get_services
     end
     
@@ -107,6 +112,7 @@ module Freyr
       
       unless name
         s = Service.s.find {|svc| svc.dir == Dir.pwd}
+        Freyr.logger.debug('getting service from directory') {"in #{Dir.pwd} found service: #{s.inspect}"}
         return group << s if s
       end
       
@@ -118,6 +124,7 @@ module Freyr
         end
       end
       
+      Freyr.logger.debug('getting service') {group.inspect}
       group
     end
     

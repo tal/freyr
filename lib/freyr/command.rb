@@ -93,9 +93,11 @@ module Freyr
       total_time = Time.now
       
       pid = spawn(command)
-        
+      
+      Freyr.logger.debug("attempting to run command") {command.inspect}
+      
       @pid = pid
-        
+      
       Process.detach(@pid)
       
       if proc_match
@@ -177,6 +179,8 @@ module Freyr
     def kill!(sig=nil)
       require_admin
       sig ||= stop_sig || 'KILL'
+      
+      Freyr.logger.debug("sending signal to process") {"Signal: #{sig}, PID: #{pid}"}
       
       if pid(true)
         Process.kill(sig, pid)

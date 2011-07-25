@@ -6,6 +6,7 @@ module Freyr
     def start(name=nil)
       services = get_from_name(name)
       if !services.empty?
+        Freyr.logger.debug('starting services') {services.inspect}
         names = services.collect {|s| s.name}
         say "Starting the " << set_color(names.join(', '), :blue) << ' services'
         
@@ -23,6 +24,7 @@ module Freyr
     def stop(name=nil)
       services = get_from_name(name)
       if !services.empty?
+        Freyr.logger.debug('stopping services') {services.inspect}
         names = services.collect {|s| s.name}
         say "Stopping the " << set_color(names.join(', '), :blue) << ' services'
         
@@ -40,6 +42,7 @@ module Freyr
     def restart(name=nil)
       services = get_from_name(name)
       if !services.empty?
+        Freyr.logger.debug('restarting services') {services.inspect}
         say "Restarting the " << set_color(services.collect {|s| s.name}.join(', '), :blue) << ' services'
         
         names = services.restart
