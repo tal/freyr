@@ -31,8 +31,11 @@ module Freyr
     end
     
     def start!
-      return unless start_command
-      command.run! unless alive?
+      if start_command
+        command.run! unless alive?
+      else
+        error("no start_command")
+      end
     end
     
     def stop!
@@ -59,13 +62,24 @@ module Freyr
       end
     end
     
+    def read_log
+      @service_info.log || @service_info.read_log
+    end
+    
     def tail!(size = 600, follow = true)
       f = follow ? 'f' : ''
-      if log
-        cmd = "tail -#{size}#{f} #{File.join(dir||'/',log)}"
+      if read_log
+        cmd = "tail -#{size}#{f} #{File.join(dir||'/',read_log)}"
         Freyr.logger.debug("tailing cmd") {cmd.inspect}
-        exec("tail -#{size}#{f} #{log}")
+        exec(cmd)
+      else
+        error("no logfile found")
       end
+    end
+    
+    def error *args, &blk
+      Freyr.logger.error(*args,&blk)
+      Freyr.logger.debug("service info for service #{self}") {@service_info.inspect}
     end
     
     def describe
@@ -77,6 +91,10 @@ module Freyr
       return true if name.to_s == n
       
       also.find {|a| a.to_s == n}
+    end
+    
+    def inspect
+      %Q{#<Freyr::Service #{name} #{start_command.inspect}>}
     end
     
     class << self

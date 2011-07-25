@@ -22,10 +22,9 @@ module Freyr
     method_option :'no-follow', :type => :boolean, :default => false, :desc => 'Disable auto follow, just print tail and exit'
     def tail(name=nil)
       services = get_from_name(name)
-      Freyr.logger.debug('tail args') {"Lines: #{options.lines}, following: #{!options['no-follow']}"}
-      Freyr.logger.debug('tailing service') {services.first.inspect}
       if !services.empty?
-        
+        Freyr.logger.debug('tail args') {"Lines: #{options.lines}, following: #{!options['no-follow']}"}
+        Freyr.logger.debug('tailing service') {services.first.inspect}
         services.first.tail!(options.lines, !options['no-follow'])
       else
         say "Can't find the #{name} service", :red
