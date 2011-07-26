@@ -90,6 +90,10 @@ module Freyr
         @added_services
       end
       
+      def method_missing *args
+        
+      end
+      
     private
       
       def namespace name

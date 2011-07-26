@@ -59,7 +59,7 @@ module Freyr
       names = collect {|s| s.name}
       
       each do |s|
-        Freyr.logger.debug('restart service') {svc.name}
+        Freyr.logger.debug('restart service') {s.name}
         s.restart!
         names.delete(s.name)
       end
