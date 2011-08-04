@@ -102,7 +102,11 @@ module Freyr
       
       def service name=nil, &blk
         name = "#{@namespace}:#{name}" if @namespace
-        @added_services << new(name,&blk)
+        if service = Service[name].first
+          service.service_info.instance_eval(&blk)
+        else
+          @added_services << new(name,&blk)
+        end
       end
     end
     
