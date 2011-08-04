@@ -100,6 +100,16 @@ module Freyr
         @namespace = name
       end
       
+      def group name, *services
+        puts "Trying #{name.inspect} on #{services.inspect}"
+        services.each do |s|
+          Service[s].each do |service|
+            puts "Service: #{service.name}"
+            service.service_info.group(name)
+          end
+        end
+      end
+      
       def service name=nil, &blk
         name = "#{@namespace}:#{name}" if @namespace
         if service = Service[name].first
