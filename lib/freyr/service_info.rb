@@ -83,6 +83,7 @@ module Freyr
     class << self
       
       def from_file file
+        @file_path = file
         file = File.expand_path(file)
         return [] unless File.exist?(file)
         @added_services = []
@@ -90,8 +91,8 @@ module Freyr
         @added_services
       end
       
-      def method_missing *args
-        
+      def method_missing name, *args
+        STDERR.puts "Freyr doesn't support #{name} as used in #{@file_path}"
       end
       
     private
@@ -101,18 +102,21 @@ module Freyr
       end
       
       def group name, *services
-        puts "Trying #{name.inspect} on #{services.inspect}"
         services.each do |s|
-          Service[s].each do |service|
-            puts "Service: #{service.name}"
-            service.service_info.group(name)
+          services = Service[s]
+          if services
+            services.each do |service|
+              service.service_info.group(name)
+            end
+          else
+            STDERR.puts "Service #{s} not found, can't add to group #{name} as attempted in #{@file_path}"
           end
         end
       end
       
       def service name=nil, &blk
         name = "#{@namespace}:#{name}" if @namespace
-        if service = Service[name].first
+        if service = Service[name]
           service.service_info.instance_eval(&blk)
         else
           @added_services << new(name,&blk)

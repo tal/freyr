@@ -150,7 +150,7 @@ module Freyr
           end
         end
         
-        group
+        group.empty? ? nil : group
       end
       
     end

@@ -1,8 +1,13 @@
+require 'delegate'
+
 module Freyr
-  class ServiceGroup < Array
+  class ServiceGroup < DelegateClass(Array)
+    extend Forwardable
+    service_methods = Service.instance_methods - Class.instance_methods
+    def_delegators :first, *service_methods
     
-    def initialize(*args)
-      super(*args)
+    def initialize
+      super([])
     end
     
     def find_by_name(n)
