@@ -4,13 +4,13 @@ module Freyr
     extend Forwardable
     
     ROOT_PIDS = '/var/run/freyr'
-    FREYR_PIDS = ENV['USER'] == 'root' ? ROOT_PIDS : File.expand_path('.freyr', '~')
+    USER_PIDS = File.expand_path('.freyr', '~')
     
-    if !File.exist?(FREYR_PIDS)
-      Dir.mkdir(FREYR_PIDS)
-    elsif !File.directory?(FREYR_PIDS)
-      File.delete(FREYR_PIDS)
-      Dir.mkdir(FREYR_PIDS)
+    if !File.exist?(USER_PIDS)
+      Dir.mkdir(USER_PIDS)
+    elsif !File.directory?(USER_PIDS)
+      File.delete(USER_PIDS)
+      Dir.mkdir(USER_PIDS)
     end
     
     attr_reader :command, :name, :service
@@ -30,11 +30,17 @@ module Freyr
     end
     
     def pid_file
-      File.join(file_dir,"#{@name}.pid")
+      path = File.join(file_dir,"#{@name}.pid")
+      if File.exist?(path)
+        path
+      else
+        File.join(file_dir(true),"#{@name}.pid")
+      end
     end
     
-    def file_dir
-      admin? ? ROOT_PIDS : FREYR_PIDS
+    def file_dir(force_user = false)
+      return USER_PIDS if force_user
+      admin? ? ROOT_PIDS : USER_PIDS
     end
     
     def read_pid
