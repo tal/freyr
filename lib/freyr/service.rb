@@ -39,6 +39,17 @@ module Freyr
       @pid_file.alive?
     end
 
+    def call_graph
+      graph = Hash.new {|h,k| h[k]=[]}
+      @info.dependencies.each do |dep|
+        if d = Service.s[dep]
+          graph[self] << d
+          graph.merge!(d.call_graph)
+        end
+      end
+      graph
+    end
+
     def dependencies(yell = false)
       missing = []
       deps = @info.dependencies.inject([]) do |all,dep|
@@ -67,19 +78,20 @@ module Freyr
     
     def tail!(size = 600, follow = true)
       f = follow ? 'f' : ''
-      if @info.read_log
-        cmd = "tail -#{size}#{f} #{File.join(@info.dir||'/',@info.log)}"
+      log_location = @info.log
+      if File.exist?(log_location)
+        cmd = "tail -#{size}#{f} #{log_location}"
         Freyr.logger.debug("tailing cmd") {cmd.inspect}
         exec(cmd)
       else
-        error("no logfile found")
-        exit(false)
+        error("no logfile found at #{log_location}")
+        abort("no logfile found at #{log_location}")
       end
     end
     
     def error *args, &blk
       Freyr.logger.error(*args,&blk)
-      Freyr.logger.debug("service info for service #{self}") {@info.inspect}
+      Freyr.logger.debug("service info for service with error #{self}") {@info.inspect}
     end
     
     def describe
@@ -124,8 +136,6 @@ module Freyr
       end
       
       def add_file f
-        Freyr.logger.debug('adding file') {f}
-        
         ServiceInfo.from_file(f).each do |ser|
           if self[ser.name]
             Freyr.logger.error('name already taken') {"Cannot add service #{ser.name} because the name is already used"}

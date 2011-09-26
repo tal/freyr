@@ -5,7 +5,7 @@ module Freyr
       super
       
       if options.trace?
-        Freyr.logger = Logger.new(STDOUT)
+        Freyr.logger.level = Logger::DEBUG
       end
       
       get_services
@@ -91,7 +91,7 @@ module Freyr
             
             proc = ProcessInfo[pid]
             
-            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb.to_i}mb" if proc
+            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb.to_i}mb PID: #{pid}" if proc
           # rescue => e
           end
         end

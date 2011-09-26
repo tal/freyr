@@ -64,7 +64,7 @@ module Freyr
                         :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
                         :restart_sig,:sudo,:groups,:ping,:also,:dependencies,:read_log,
                         :pid_file, :dont_write_log,:env
-    
+    alias log_file log
     def initialize(name=nil, args={}, &block)
       @groups = []
       @also = []
@@ -110,7 +110,7 @@ module Freyr
     end
 
     def log val=nil
-      if val = super
+      val = if val = super
         val
       else
         if @read_log
@@ -123,6 +123,8 @@ module Freyr
           end
         end
       end
+
+      val =~ /^\// ? val : File.join(dir,val)
     end
 
     def dir val=nil
@@ -165,6 +167,7 @@ module Freyr
       def from_file file
         @file_path = file
         file = File.expand_path(file)
+        Freyr.logger.debug("adding file")  {file}
         return [] unless File.exist?(file)
         @added_services = []
         instance_eval(File.open(file).read,file,0)

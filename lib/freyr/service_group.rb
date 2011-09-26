@@ -1,6 +1,7 @@
 module Freyr
   class ServiceGroup < DelegateClass(Array)
     extend Forwardable
+    include TSort
     service_methods = Service.instance_methods - Class.instance_methods
     def_delegators :first, *service_methods
     
@@ -22,6 +23,12 @@ module Freyr
 
     def inspect
       %Q{#<#{self.class.inspect} #{@_dc_obj.collect{|s| s.name}.join(', ')}>}
+    end
+
+    def call_graph
+      inject(Hash.new {|h,k| h[k]=[]}) do |graph, svc|
+        graph.merge(svc.call_graph)
+      end
     end
     
     def run
@@ -55,6 +62,15 @@ module Freyr
       
       names
     end
+
+    def tsort_each_node &blk
+      call_graph.keys.each(&blk)
+    end
+
+    def tsort_each_child(node, &blk)
+      call_graph[node].each(&blk)
+    end
+    alias call_order tsort
 
   end
 end
