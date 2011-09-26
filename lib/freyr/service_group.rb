@@ -26,7 +26,7 @@ module Freyr
     end
 
     def call_graph
-      inject(Hash.new {|h,k| h[k]=[]}) do |graph, svc|
+      @call_graph ||= inject(Hash.new {|h,k| h[k]=[]}) do |graph, svc|
         graph.merge(svc.call_graph)
       end
     end
@@ -34,7 +34,8 @@ module Freyr
     def run
       return [] if empty?
 
-      services = update_services
+      @call_graph = nil # Make sure it's getting the latest graph
+      services = call_order
 
       services.collect do |service|
         service.name if service.start!

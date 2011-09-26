@@ -7,7 +7,7 @@ module Freyr
       services = get_from_name(name)
       if !services.empty?
         Freyr.logger.debug('starting services') {services.inspect}
-        names = services.collect {|s| s.name}
+        names = services.call_order.collect {|s| s.name}
         say "Starting the " << set_color(names.join(', '), :blue) << ' services'
         
         changed_names = services.run

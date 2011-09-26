@@ -109,18 +109,19 @@ module Freyr
     end
     
     def get_from_name name
-      unless name
+      if name
+        group = Service[name.to_sym]
+        Freyr.logger.debug('find service by name') {"#{name.to_sym} #{group.inspect}"}
+        group
+      else
         if s = Service.by_dir[Dir.pwd]
           Freyr.logger.debug('getting service from directory') {"in #{Dir.pwd} found service: #{s.inspect}"}
         else
           Freyr.logger.debug('getting service from directory') {"in #{Dir.pwd} unable to find any service"}
         end
-        return ServcieGroup[s]
+        
+        Service[s.name]
       end
-
-      group = Service[name.to_sym]
-      Freyr.logger.debug('find service by name') {"#{name.to_sym} #{group.inspect}"}
-      group
     end
     
     def get_services
