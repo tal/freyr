@@ -1,7 +1,19 @@
 service :sleep do
+  group :sleepers
+
+  # requires :sudosleepd
+  also_as :short_sleep
+  start 'sleep 20'
+
+  proc_match /sleep 20/
+end
+
+service :sleep2 do
+  requires :sleep, :foobar
   start 'sleep 20'
 end
 
 service :sudosleep do
+  group :sleepers
   start 'sudo sleep 20'
 end

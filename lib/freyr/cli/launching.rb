@@ -15,9 +15,14 @@ module Freyr
         list_all_services(:highlight_state => changed_names).each {|l| say(l)}
       else
         say "Can't find the #{name} service", :red
+        exit(false)
       end
     rescue AdminRequired
       say "Please run in sudo to launch #{name}.", :red
+      exit(false)
+    rescue Service::MissingDependency => e
+      say "Missing dependency, could not launch service: #{e.to_s}"
+      exit(false)
     end
     
     desc 'stop [SERVICE=dirname]', 'Stop particular service'
@@ -33,9 +38,11 @@ module Freyr
         list_all_services(:highlight_state => changed_names).each {|l| say(l)}
       else
         say "Can't find the #{name} service", :red
+        exit(false)
       end  
     rescue AdminRequired
       say "Please run in sudo to stop #{name}.", :red
+      exit(false)
     end
     
     desc 'restart [SERVICE=dirname]', 'restart particular service'
@@ -50,10 +57,12 @@ module Freyr
         list_all_services(:highlight_state => names).each {|l| say(l)}
       else
         say "Can't find the #{name} service", :red
+        exit(false)
       end
       
     rescue AdminRequired
       say "Please run in sudo to launch #{name}.", :red
+      exit(false)
     end
     
   end

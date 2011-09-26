@@ -1,16 +1,21 @@
+require 'delegate'
 require 'forwardable'
 require 'logger'
+require 'fileutils'
 
 module Freyr
-  def self.logger
+  extend self
+  OUT = STDOUT.dup
+
+  def logger
     @logger ||= Logger.new("/dev/null")
   end
   
-  def self.logger= logger
+  def logger= logger
     @logger = logger
   end
 end
 
-%w{version service service_group command service_info pinger process_info}.each do |f|
+%w{version helpers service service_group command service_info pid_file pinger process_info}.each do |f|
   require File.expand_path(File.dirname(__FILE__)+"/freyr/#{f}.rb")
 end

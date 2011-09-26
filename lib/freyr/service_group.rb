@@ -1,49 +1,37 @@
-require 'delegate'
-
 module Freyr
-  class ServiceGroup < Array
+  class ServiceGroup < DelegateClass(Array)
     extend Forwardable
     service_methods = Service.instance_methods - Class.instance_methods
     def_delegators :first, *service_methods
     
+    def initialize *services
+      @all_services = []
+      super(services)
+    end
+
     def find_by_name(n)
       find {|s| s.name == n}
     end
+
+    def update_services
+      dependencies = inject([]) do |deps,svc|
+        deps | svc.dependencies(true)
+      end
+      @all_services = dependencies|@_dc_obj
+    end
+
+    def inspect
+      %Q{#<#{self.class.inspect} #{@_dc_obj.collect{|s| s.name}.join(', ')}>}
+    end
     
-    # Take care this can make a stack overflow
     def run
       return [] if empty?
-      
-      needs_to_run = ServiceGroup.new
-      
-      kill = false
-      names = []
-      
-      each do |svc|
-        
-        unless svc.dependencies.empty?
-          if n = svc.dependencies.find {|s| !Service.alive?(s)}
-            if find_by_name(n)
-              needs_to_run << svc
-            elsif s = Service[n].first
-              needs_to_run << s
-              needs_to_run << svc
-            else
-              puts "Can't run #{svc.name} because dependency #{n} cannot be found"
-              kill = true
-            end
-            
-            next
-          end
-        end
-        
-        Freyr.logger.debug('starting service') {svc.name}
-        pid = svc.start!
-        names << svc.name if pid
+
+      services = update_services
+
+      services.collect do |service|
+        service.name if service.start!
       end
-      
-      names += needs_to_run.run unless kill
-      names
     end
     
     def stop
@@ -67,6 +55,6 @@ module Freyr
       
       names
     end
-    
+
   end
 end

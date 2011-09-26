@@ -3,43 +3,28 @@ module Freyr
     extend Forwardable
     class << self
       def add_service_method *methods
-        def_delegators :@service_info, *methods
+        
       end
     end
     
-    attr_reader :service_info, :command
+    attr_reader :info, :command, :pid_file, :defined_in_paths
+
+    def_delegators :info, :name, :groups
     
     def initialize(s)
-      @service_info = s
+      @info = s
       @command = Command.new(self)
-    end
-    
-    def start_command
-      @service_info.start
-    end
-    
-    def env
-      service_info.env || {}
-    end
-    
-    def log
-      @service_info.read_log || @service_info.log || File.join(command.file_dir,"#{name}.log")
-    end
-    
-    def write_log?
-      @service_info.log && !@service_info.read_log
+      raise Exception, "please provide proc_match for service #{@info.name}" unless @info.name
+      @pid_file = PidFile.new(s.pid_file,s.proc_match)
+      @defined_in_paths = []
     end
     
     def start!
-      if start_command
-        command.run! unless alive?
-      else
-        error("no start_command")
-      end
+      command.run! unless alive?
     end
     
     def stop!
-      command.kill! if start_command
+      command.kill!
     end
     
     def restart!
@@ -47,110 +32,123 @@ module Freyr
     end
     
     def is_group?(name)
-      groups.find {|g| g.to_s == name.to_s}
+      @info.groups.find {|g| g.to_s == name.to_s}
     end
     
     def alive?
-      command.alive?
+      @pid_file.alive?
+    end
+
+    def dependencies(yell = false)
+      missing = []
+      deps = @info.dependencies.inject([]) do |all,dep|
+        if d = Service.s[dep]
+          all | (d.dependencies(yell) + [d])
+        else
+          missing << dep
+          all
+        end
+      end
+
+      if yell && !missing.empty?
+        raise MissingDependency, "missing #{missing.join(', ')} dependencies"
+      end
+
+      deps.compact
     end
     
     def ping!
-      if ping
+      if @info.ping
         pinger = Pinger.new(self)
         pinger.ping
         pinger
       end
     end
     
-    def read_log
-      @service_info.log || @service_info.read_log
-    end
-    
     def tail!(size = 600, follow = true)
       f = follow ? 'f' : ''
-      if read_log
-        cmd = "tail -#{size}#{f} #{File.join(dir||'/',read_log)}"
+      if @info.read_log
+        cmd = "tail -#{size}#{f} #{File.join(@info.dir||'/',@info.log)}"
         Freyr.logger.debug("tailing cmd") {cmd.inspect}
         exec(cmd)
       else
         error("no logfile found")
+        exit(false)
       end
     end
     
     def error *args, &blk
       Freyr.logger.error(*args,&blk)
-      Freyr.logger.debug("service info for service #{self}") {@service_info.inspect}
+      Freyr.logger.debug("service info for service #{self}") {@info.inspect}
     end
     
     def describe
-      %Q{#{name}(#{groups.join(',')}) - #{start_command}}
+      %Q{#{@info.name}(#{@info.groups.join(',')}) - #{@info.start}}
     end
     
     def matches?(n)
       n = n.to_s
-      return true if name.to_s == n
+      return true if @info.name.to_s == n
       
-      also.find {|a| a.to_s == n}
+      @info.also.find {|a| a.to_s == n}
     end
     
     def inspect
-      %Q{#<Freyr::Service #{name} #{start_command.inspect}>}
+      %Q{#<Freyr::Service #{@info.name} #{@info.start.inspect}>}
     end
+
+    class MissingDependency < StandardError; end
     
     class << self
-      
+      # Get by name only
       def s
-        @all_services ||= []
-      end
-      
-      def names
-        @all_names ||= []
-      end
-      
-      def groups
-        @all_groups ||= []
+        @all_services ||= {}
       end
       
       def selectors
-        names+groups
+        by_selector.keys
+      end
+
+      def by_dir
+        @by_dir ||= {}
+      end
+
+      # Get by name and alias
+      def by_name
+        @by_name ||= {}
+      end
+
+      # by group/alias/name and always a servicegroup
+      def by_selector
+        @by_selector ||= Hash.new {|h,k| h[k] = ServiceGroup.new}
       end
       
       def add_file f
-        s
-        
         Freyr.logger.debug('adding file') {f}
         
-        services = ServiceInfo.from_file(f).collect do |ser|
-          raise 'Cannot have two things of the same name' if selectors.include?(ser.name)
-          names |= [ser.name]
-          @all_groups |= ser.groups
-          Freyr.logger.debug('adding service') {ser.name.inspect}
-          new(ser)
+        ServiceInfo.from_file(f).each do |ser|
+          if self[ser.name]
+            Freyr.logger.error('name already taken') {"Cannot add service #{ser.name} because the name is already used"}
+            next
+          end
+          service = new(ser)
+          service.defined_in_paths << File.expand_path(f)
+          self.by_selector[ser.name] = ServiceGroup.new service
+          self.s[ser.name] = service
+          self.by_name[ser.name] = service
+          self.by_dir[ser.dir] = service
+          ser.groups.each {|group| self.by_selector[group] << service }
+          ser.also.each do |also_as|
+            self.by_selector[also_as] = self.by_selector[ser.name]
+            self.by_name[also_as] = self.by_name[ser.name]
+          end
         end
-        
-        @all_services += services
-      end
-      
-      def alive?(name)
-        !!self[name].find do |ser|
-          ser.alive?
-        end
+
+        @all_services
       end
       
       def [](name)
-        group = ServiceGroup.new
-        
-        if ser = s.find {|sr| sr.matches?(name)}
-          group << ser
-        else
-          s.each do |sr|
-            if sr.is_group?(name)
-              group << sr
-            end
-          end
-        end
-        
-        group.empty? ? nil : group
+        by_selector.has_key?(name) ? by_selector[name] : nil
       end
       
     end

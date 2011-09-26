@@ -9,9 +9,32 @@ module Freyr
     # Response object
     attr_reader :response
     
-    def initialize(command)
-      @command = command
-      @url = command.ping
+    def initialize(service)
+      @service = service
+      @url = service.info.ping
+    end
+
+    def wait_for_resp wait=40, interval = 0.6, &blk
+      OUT.puts "\nWaiting for response from #{url}"
+      start = Time.now
+
+      blk ||= lambda {true}
+
+      begin
+        OUT.print '.'; OUT.flush
+        ping
+        sleep(interval)
+      end until server_probably_launched? || (Time.now-start) > wait || !blk.call
+
+      if blk.call
+        if response
+          OUT.puts '*', "Last response received with code #{response.code}"
+        else
+          OUT.puts 'x', "Couldn't reach #{@service.name} service"
+        end
+      else
+        OUT.puts 'x',"Service died durring launch"
+      end
     end
     
     # The URI object for the given URL
@@ -35,7 +58,7 @@ module Freyr
     
     # Did the response recieve a success http code
     def success?
-      response.is_a?(Net::HTTPSuccess)
+      response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
     end
     
     # Did the response recieve a 500 error
@@ -43,7 +66,7 @@ module Freyr
       response.is_a?(Net::HTTPInternalServerError)
     end
     
-    # Did it recieve 2xx or 500
+    # Did it receive 2xx or 500
     def server_probably_launched?
       success? || server_error?
     end

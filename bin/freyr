@@ -4,4 +4,6 @@ $LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
 require 'freyr'
 require 'freyr/cli'
 
+trap("SIGINT") { exit(false) }
+
 Freyr::CLI.start
