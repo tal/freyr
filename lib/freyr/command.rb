@@ -84,6 +84,18 @@ module Freyr
     end
     
     def spawn(command)
+      if @info.rvm && RVM.installed?
+        Freyr.logger.debug('attempting to set rvm') {@info.rvm}
+        if RVM.installed?(@info.rvm)
+          command = "rvm #{@info.rvm} exec #{command}"
+          Freyr.logger.debug('changed command to') {command}
+        else
+          abort("must setup rvm correctly, run: rvm --install --create #{@info.rvm}")
+        end
+      elsif @info.rvm
+        Freyr.logger.debug("rvm not installed so can't switch to") {@info.rvm}
+      end
+
       fork do
         File.umask @info.umask if @info.umask
         uid_num = Etc.getpwnam(@info.uid).uid if @info.uid

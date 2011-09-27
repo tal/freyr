@@ -5,7 +5,7 @@ module Freyr
     desc 'start [SERVICE=dirname]', 'Start particular service'
     def start(name=nil)
       services = get_from_name(name)
-      if !services.empty?
+      if services && !services.empty?
         Freyr.logger.debug('starting services') {services.inspect}
         names = services.call_order.collect {|s| s.name}
         say "Starting the " << set_color(names.join(', '), :blue) << ' services'
@@ -28,7 +28,7 @@ module Freyr
     desc 'stop [SERVICE=dirname]', 'Stop particular service'
     def stop(name=nil)
       services = get_from_name(name)
-      if !services.empty?
+      if services && !services.empty?
         Freyr.logger.debug('stopping services') {services.inspect}
         names = services.collect {|s| s.name}
         say "Stopping the " << set_color(names.join(', '), :blue) << ' services'
@@ -48,7 +48,7 @@ module Freyr
     desc 'restart [SERVICE=dirname]', 'restart particular service'
     def restart(name=nil)
       services = get_from_name(name)
-      if !services.empty?
+      if services && !services.empty?
         Freyr.logger.debug('restarting services') {services.inspect}
         say "Restarting the " << set_color(services.collect {|s| s.name}.join(', '), :blue) << ' services'
         

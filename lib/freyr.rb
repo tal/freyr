@@ -28,6 +28,6 @@ if ARGV.include?('--trace')
   Freyr.logger.level = Logger::DEBUG
 end
 
-%w{version helpers service service_group command service_info pid_file pinger process_info}.each do |f|
+%w{version helpers service service_group command service_info pid_file pinger process_info rvm}.each do |f|
   require File.expand_path(File.dirname(__FILE__)+"/freyr/#{f}.rb")
 end

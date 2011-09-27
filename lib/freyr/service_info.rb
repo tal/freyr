@@ -63,7 +63,7 @@ module Freyr
     add_service_method  :start,:name,:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
                         :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
                         :restart_sig,:sudo,:groups,:ping,:also,:dependencies,:read_log,
-                        :pid_file, :dont_write_log,:env
+                        :pid_file, :dont_write_log,:env, :rvm
     alias log_file log
     def initialize(name=nil, args={}, &block)
       @groups = []

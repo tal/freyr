@@ -14,10 +14,11 @@ module Freyr
     def initialize(s)
       @info = s
       @command = Command.new(self)
-      raise Exception, "please provide proc_match for service #{@info.name}" unless @info.name
+      raise NoProcMatch, "please provide proc_match for service #{@info.name}" unless @info.proc_match
       @pid_file = PidFile.new(s.pid_file,s.proc_match)
       @defined_in_paths = []
     end
+    class NoProcMatch < StandardError; end
     
     def start!
       command.run! unless alive?
@@ -41,6 +42,7 @@ module Freyr
 
     def call_graph
       graph = Hash.new {|h,k| h[k]=[]}
+      graph[self]
       @info.dependencies.each do |dep|
         if d = Service.s[dep]
           graph[self] << d
@@ -141,16 +143,20 @@ module Freyr
             Freyr.logger.error('name already taken') {"Cannot add service #{ser.name} because the name is already used"}
             next
           end
-          service = new(ser)
-          service.defined_in_paths << File.expand_path(f)
-          self.by_selector[ser.name] = ServiceGroup.new service
-          self.s[ser.name] = service
-          self.by_name[ser.name] = service
-          self.by_dir[ser.dir] = service
-          ser.groups.each {|group| self.by_selector[group] << service }
-          ser.also.each do |also_as|
-            self.by_selector[also_as] = self.by_selector[ser.name]
-            self.by_name[also_as] = self.by_name[ser.name]
+          begin
+            service = new(ser)
+            service.defined_in_paths << File.expand_path(f)
+            self.by_selector[ser.name] = ServiceGroup.new service
+            self.s[ser.name] = service
+            self.by_name[ser.name] = service
+            self.by_dir[ser.dir] = service
+            ser.groups.each {|group| self.by_selector[group] << service }
+            ser.also.each do |also_as|
+              self.by_selector[also_as] = self.by_selector[ser.name]
+              self.by_name[also_as] = self.by_name[ser.name]
+            end
+          rescue NoProcMatch => e
+            puts "Couldn't load #{f} because #{ser.name} doesn't have a proc_match defined"
           end
         end
 
