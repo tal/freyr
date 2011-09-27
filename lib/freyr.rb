@@ -1,16 +1,33 @@
+require 'delegate'
 require 'forwardable'
 require 'logger'
+require 'fileutils'
+require 'tsort'
 
 module Freyr
-  def self.logger
-    @logger ||= Logger.new("/dev/null")
+  extend self
+  OUT = STDOUT.dup
+
+  def logger
+    @logger ||= begin 
+      log = Logger.new(STDOUT)
+      log.level = Logger::FATAL
+      log.formatter = proc do |severity, datetime, progname, msg|
+        %Q{#{severity.chars.first}: #{[progname,msg].compact.join(' - ')}\n}
+      end
+      log
+    end
   end
   
-  def self.logger= logger
+  def logger= logger
     @logger = logger
   end
 end
 
-%w{version service service_group command service_info pinger process_info}.each do |f|
+if ARGV.include?('--trace')
+  Freyr.logger.level = Logger::DEBUG
+end
+
+%w{version helpers service service_group command service_info pid_file pinger process_info rvm}.each do |f|
   require File.expand_path(File.dirname(__FILE__)+"/freyr/#{f}.rb")
 end

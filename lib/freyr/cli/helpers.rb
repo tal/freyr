@@ -5,7 +5,7 @@ module Freyr
       super
       
       if options.trace?
-        Freyr.logger = Logger.new(STDOUT)
+        Freyr.logger.level = Logger::DEBUG
       end
       
       get_services
@@ -21,18 +21,19 @@ module Freyr
       
       groups_join = '|'
       
-      lengths = Service.s.collect do |s|
+      lengths = {}
+      Service.s.each do |name,s|
         n = "   #{s.name}(#{s.groups.join(groups_join)})"
         max_length = n.length if n.length > max_length
-        n.length
+        lengths[name] = n.length
       end
       
       max_length += 3 # min distance between name and group
       
       strs = []
-      Service.s.each_with_index do |s,i|
+      Service.s.each do |i,s|
         str = '  '
-        if s.sudo
+        if s.info.sudo
           str << set_color('*', :yellow)
         else
           str << ' '
@@ -86,11 +87,11 @@ module Freyr
         
         if args[:procinfo]
           begin
-            pid = s.command.pid
+            pid = s.pid_file.pid
             
             proc = ProcessInfo[pid]
             
-            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb.to_i}mb" if proc
+            str << " CPU: #{proc.pcpu}% - MEM: #{proc.mem_in_mb.to_i}mb PID: #{pid}" if proc
           # rescue => e
           end
         end
@@ -108,24 +109,19 @@ module Freyr
     end
     
     def get_from_name name
-      group = ServiceGroup.new
-      
-      unless name
-        s = Service.s.find {|svc| svc.dir == Dir.pwd}
-        Freyr.logger.debug('getting service from directory') {"in #{Dir.pwd} found service: #{s.inspect}"}
-        return group << s if s
-      end
-      
-      if options.namespace && s = Service["#{options.namespace}:#{name}"].first
-        group << s # only pickng one because if it's namespaced it's not a group
+      if name
+        group = Service[name.to_sym]
+        Freyr.logger.debug('find service by name') {"#{name.to_sym} #{group.inspect}"}
+        group
       else
-        Service[name].each do |s|
-          group << s
+        if s = Service.by_dir[Dir.pwd]
+          Freyr.logger.debug('getting service from directory') {"in #{Dir.pwd} found service: #{s.inspect}"}
+        else
+          Freyr.logger.debug('getting service from directory') {"in #{Dir.pwd} unable to find any service"}
         end
+        
+        Service[s.name]
       end
-      
-      Freyr.logger.debug('getting service') {group.inspect}
-      group
     end
     
     def get_services

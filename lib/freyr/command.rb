@@ -3,96 +3,22 @@ module Freyr
   class Command
     extend Forwardable
     
-    ROOT_PIDS = '/var/run/freyr'
-    USER_PIDS = File.expand_path('.freyr', '~')
+    attr_reader :name, :service
     
-    if !File.exist?(USER_PIDS)
-      Dir.mkdir(USER_PIDS)
-    elsif !File.directory?(USER_PIDS)
-      File.delete(USER_PIDS)
-      Dir.mkdir(USER_PIDS)
+    def initialize(service, command=nil, args = {})
+      @service = service
     end
-    
-    attr_reader :command, :name, :service
-    
-    def initialize(name, command=nil, args = {})
-      if name.is_a?(Service)
-        @service = name
-        @name = service.name
-        @command = service.start_command
-        @env = service.env
-      else
-        @name = name
-        @command = command
-        
-        @env = args[:env]
-      end
-    end
-    
-    def pid_file
-      path = File.join(file_dir,"#{@name}.pid")
-      if File.exist?(path)
-        path
-      else
-        File.join(file_dir(true),"#{@name}.pid")
-      end
-    end
-    
-    def file_dir(force_user = false)
-      return USER_PIDS if force_user
-      admin? ? ROOT_PIDS : USER_PIDS
-    end
-    
-    def read_pid
-      return unless File.exist?(pid_file)
-      p = File.open(pid_file).read
-      p ? p.to_i : nil
-    end
-    
-    def pid(force = false)
-      @pid = nil if force
-      @pid ||= read_pid
-    end
-    
-    def alive?
-      return unless pid
-      Process.getpgid(pid)
-      true
-    rescue Errno::ESRCH
-      retried = false unless defined?(retried)
-      
-      if !retried && @pid = pid_from_procname
-        save
-        retried = true
-        retry
-      end
-      
-      if pid(true)
-        File.delete(pid_file) unless admin? && !is_root?
-      end
-      
-      false
-    end
-    
-    def delete_if_dead
-      !alive?
-    end
-    
-    def save
-      if File.exist?(pid_file)
-        old_pid = read_pid
-        begin
-          Process.kill('KILL', old_pid) if old_pid && old_pid.to_s != @pid.to_s
-        rescue Errno::ESRCH
-        end
-      end
-      
-      File.open(pid_file, 'w') {|f| f.write(@pid)}
+
+    def_delegators :'@service', :info
+    def_delegators :info, :name, :env
+
+    def command
+      info.start
     end
     
     def run!
       return unless command
-      kill! if alive?
+      kill! if service.alive?
       
       require_admin
       
@@ -101,90 +27,31 @@ module Freyr
       pid = spawn(command)
       
       Freyr.logger.debug("attempting to run command") {command.inspect}
+      str = "\nStarting #{info.name} with #{command.inspect}"
+      OUT.puts '',"Starting #{info.name} with #{command.inspect}", '='*str.length
+      Process.detach(pid)
       
-      @pid = pid
+      pid = service.pid_file.wait_for_pid
       
-      Process.detach(@pid)
+      OUT.puts "PID of new #{info.name} process is #{pid}"
       
-      if proc_match
-        puts "Waiting for pid from match of #{proc_match.inspect}"
+      if info.ping
+        pinger = Pinger.new(@service)
         
-        start = Time.now
-        until (pid = pid_from_procname) || (Time.now-start) > 40
-          print '.'; STDOUT.flush
-          sleep(0.2)
-        end
-        
-        raise "\nCouldnt find pid after 40 seconds" unless pid
-        
-        puts '*'
-        
-        @pid = pid
+        pinger.wait_for_resp { @service.alive? }
       end
       
-      puts "PID of new #{name} process is #{@pid}"
-      save
-      
-      if ping
-        pinger = Pinger.new(self)
-        
-        puts '',"Waiting for response from #{pinger.url}"
-        
-        # Move this pinger code somewhere else
-        start = Time.now
-        begin
-          print '.'; STDOUT.flush
-          pinger.ping
-          sleep(0.6)
-        end until pinger.server_probably_launched? || (Time.now-start) > 40 || !alive?
-        
-        if alive?
-          
-          if pinger.response
-            puts '*',"Last response recieved with code #{pinger.response.code}"
-          else
-            puts 'x',"Couldn't reach #{name} service"
-          end
-        else
-          puts 'x', "Service died durring launch"
-        end
-      end
-      
-      if alive?
-        puts "Launch took about #{(Time.now-total_time).ceil} seconds"
-        
-        @pid
+      if @service.alive?
+        OUT.puts "Launch took about #{(Time.now-total_time).ceil} seconds"
+        pid
       else
-        puts "#{name} service wasn't launched correctly. For details see: #{log}"
-        delete_if_dead
-      end
-    end
-    
-    def update_pid
-      if @pid = pid_from_procname
-        save
-        @pid
-      end
-    end
-    
-    def pid_from_procname
-      return unless proc_match
-      
-      pids = `ps -eo pid,command`.split("\n").inject({}) do |r, pid|
-        if m = pid.match(/^\s*(\d+)\s(.+)$/)
-          r[m[2]] = m[1].to_i
-        end
-        r
-      end
-      
-      if procline = pids.keys.find {|p| p.match(proc_match)}
-        pids[procline]
+        OUT.puts "#{info.name} service wasn't launched correctly. For details see: #{info.log}"
       end
     end
     
     def kill!(sig=nil)
       require_admin
-      sig ||= stop_sig || 'KILL'
+      sig ||= info.stop_sig || 'KILL'
       
       Freyr.logger.debug("sending signal to process") {"Signal: #{sig}, PID: #{pid}"}
       
@@ -192,64 +59,71 @@ module Freyr
         Process.kill(sig, pid)
       end
     end
+
+    def pid force = false
+      @service.pid_file.pid(force)
+    end
     
     def restart!
       require_admin
       
-      if restart
+      if info.restart
         chdir
-        system(restart)
-        update_pid
-      elsif restart_sig
-        kill!(restart_sig)
+        system(info.restart)
+      elsif info.restart_sig
+        kill!(info.restart_sig)
       else
         run!
       end
     end
     
-    def admin?
-      sudo
-    end
-    
     private
     
     def require_admin
-      raise AdminRequired if admin? && !is_root?
-    end
-    
-    def is_root?
-      ENV['USER'] == 'root'
+      raise AdminRequired if info.sudo && !Freyr.is_root?
     end
     
     def chdir
-      Dir.chdir File.expand_path(dir||'/')
+      Dir.chdir File.expand_path(info.dir||'/')
     end
     
     def spawn(command)
+      if info.rvm && RVM.installed?
+        Freyr.logger.debug('attempting to set rvm') {info.rvm}
+        if RVM.installed?(info.rvm)
+          command = "rvm #{info.rvm} exec #{command}"
+          Freyr.logger.debug('changed command to') {command}
+        else
+          abort("must setup rvm correctly, run: rvm --install --create #{info.rvm}")
+        end
+      elsif info.rvm
+        Freyr.logger.debug("rvm not installed so can't switch to") {info.rvm}
+      end
+
       fork do
-        File.umask self.umask if self.umask
-        uid_num = Etc.getpwnam(self.uid).uid if uid
-        gid_num = Etc.getgrnam(self.gid).gid if gid
+        File.umask info.umask if info.umask
+        uid_num = Etc.getpwnam(info.uid).uid if info.uid
+        gid_num = Etc.getgrnam(info.gid).gid if info.gid
         
-        ::Dir.chroot(self.chroot) if self.chroot
+        ::Dir.chroot(info.chroot) if info.chroot
         ::Process.setsid
-        ::Process.groups = [gid_num] if self.gid
-        ::Process::Sys.setgid(gid_num) if self.gid
-        ::Process::Sys.setuid(uid_num) if self.uid
+        ::Process.groups = [info.guid] if info.gid
+        ::Process::Sys.setgid(info.guid) if info.gid
+        ::Process::Sys.setuid(info.guid) if info.uid
         chdir
         $0 = "freyr - #{name} (#{command})"
         STDIN.reopen "/dev/null"
-        if log_cmd
+        if info.log_cmd
           STDOUT.reopen IO.popen(log_cmd, "a")
-        elsif log && service.write_log?
-          STDOUT.reopen log, "a"
+        elsif info.log && !info.dont_write_log
+          STDOUT.reopen info.log, "a"
         else
           STDOUT.reopen "/dev/null"
         end
-        if err_log_cmd
-          STDERR.reopen IO.popen(err_log_cmd, "a") 
-        elsif err_log && (log_cmd || err_log != log)
-          STDERR.reopen err_log, "a"
+        if info.err_log_cmd
+          STDERR.reopen IO.popen(info.err_log_cmd, "a") 
+        elsif info.err_log && (info.log_cmd || info.err_log != info.log)
+          STDERR.reopen info.err_log, "a"
         else
           STDERR.reopen STDOUT
         end
@@ -263,18 +137,13 @@ module Freyr
           end
         end
         
-        exec(command) unless command.empty?
+        exec(command)
       end
     end
     
 
     class << self
       def add_service_method *methods
-        methods.each do |meth|
-          define_method(meth) do |*args|
-            @service.__send__(meth,*args) if @service
-          end
-        end
       end
     end
   end

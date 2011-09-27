@@ -4,19 +4,28 @@ module Freyr
     def initialize pid
       @pid = pid
     end
+
+    def alive?
+      Process.getpgid(pid)
+      true
+    rescue Errno::ESRCH
+      false
+    end
     
     def ps
       return if !pid || pid.to_s.empty?
-      info = `ps p #{pid} -o pid,rss,vsz,pmem,pcpu,ruser,command`
-      match = info.match(/#{pid}\s+(\d+)\s+(\d+)\s+([\d\.]+)\s+([\d\.]+)\s+(\w+)\s+(.+)/)
-      return unless match
-      @rss = match[1].to_i
-      @vsz = match[2].to_i
-      @pmem = match[3].to_f
-      @pcpu = match[4].to_f
-      @ruser = match[5]
-      @command = match[6]
-      info
+      @ps_info ||= begin
+        info = `ps p #{pid} -o pid,rss,vsz,pmem,pcpu,ruser,command`
+        match = info.match(/#{pid}\s+(\d+)\s+(\d+)\s+([\d\.]+)\s+([\d\.]+)\s+(\w+)\s+(.+)/)
+        return unless match
+        @rss = match[1].to_i
+        @vsz = match[2].to_i
+        @pmem = match[3].to_f
+        @pcpu = match[4].to_f
+        @ruser = match[5]
+        @command = match[6]
+        info
+      end
     end
     
     def port
