@@ -11,7 +11,7 @@ describe Freyr::ServiceInfo do
 
     it "should function like anything else" do
       subject.log "START"
-      subject.log.should == "START"
+      subject.log.should == "/START"
       subject.dont_write_log.should_not == true
     end
 
@@ -28,7 +28,7 @@ describe Freyr::ServiceInfo do
 
     it "should go for read log" do
       subject.read_log "foo"
-      subject.log.should == 'foo'
+      subject.log.should == '/foo'
       subject.dont_write_log.should == true
     end
 

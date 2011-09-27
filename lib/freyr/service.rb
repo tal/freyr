@@ -7,18 +7,25 @@ module Freyr
       end
     end
     
-    attr_reader :info, :command, :pid_file, :defined_in_paths
+    attr_reader :info, :command, :defined_in_paths
 
     def_delegators :info, :name, :groups
     
     def initialize(s)
       @info = s
       @command = Command.new(self)
-      raise NoProcMatch, "please provide proc_match for service #{@info.name}" unless @info.proc_match
-      @pid_file = PidFile.new(s.pid_file,s.proc_match)
-      @defined_in_paths = []
+      Service.by_selector[name] = ServiceGroup.new(self)
+      Service.s[name] = self
+      Service.by_name[name] = self
     end
     class NoProcMatch < StandardError; end
+
+    def pid_file
+      @pid_file ||= begin
+        raise NoProcMatch, "please provide proc_match for service #{@info.name}" unless @info.proc_match
+        PidFile.new(@info.pid_file,@info.proc_match)
+      end
+    end
     
     def start!
       command.run! unless alive?
@@ -37,7 +44,7 @@ module Freyr
     end
     
     def alive?
-      @pid_file.alive?
+      pid_file.alive?
     end
 
     def call_graph
@@ -138,27 +145,7 @@ module Freyr
       end
       
       def add_file f
-        ServiceInfo.from_file(f).each do |ser|
-          if self[ser.name]
-            Freyr.logger.error('name already taken') {"Cannot add service #{ser.name} because the name is already used"}
-            next
-          end
-          begin
-            service = new(ser)
-            service.defined_in_paths << File.expand_path(f)
-            self.by_selector[ser.name] = ServiceGroup.new service
-            self.s[ser.name] = service
-            self.by_name[ser.name] = service
-            self.by_dir[ser.dir] = service
-            ser.groups.each {|group| self.by_selector[group] << service }
-            ser.also.each do |also_as|
-              self.by_selector[also_as] = self.by_selector[ser.name]
-              self.by_name[also_as] = self.by_name[ser.name]
-            end
-          rescue NoProcMatch => e
-            puts "Couldn't load #{f} because #{ser.name} doesn't have a proc_match defined"
-          end
-        end
+        ServiceInfo.from_file(f)
 
         @all_services
       end

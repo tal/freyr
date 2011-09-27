@@ -60,6 +60,7 @@ module Freyr
     MODIFIERS[:stop] << :_sudo_checker
     MODIFIERS[:restart] << :_sudo_checker
     ATTRS = []
+    attr_reader :defined_in
     add_service_method  :start,:name,:dir,:log_cmd,:log,:err_log_cmd,:err_log,:umask,
                         :uid,:gid,:chroot,:proc_match,:restart,:stop,:stop_sig,
                         :restart_sig,:sudo,:groups,:ping,:also,:dependencies,:read_log,
@@ -69,12 +70,15 @@ module Freyr
       @groups = []
       @also = []
       @dependencies = []
+      @defined_in = []
       if name.is_a?(Hash)
         @name = name.keys.first
         @groups << name[@name]
       else
         @name = name
       end
+
+      @service = Service.new(self)
       
       instance_eval(&block) if block_given?
     end
@@ -128,6 +132,11 @@ module Freyr
     end
 
     def dir val=nil
+      if val
+        val.sub! /(.)\/$/, '\1' # remove tailing slash
+        Service.by_dir[val] = @service
+      end
+
       if val = super
         val
       else
@@ -136,6 +145,9 @@ module Freyr
     end
 
     def group(*val)
+      val.each do |group|
+        Service.by_selector[group] << @service
+      end
       @groups |= val
     end
     
@@ -144,6 +156,10 @@ module Freyr
     end
     
     def also_as(*val)
+      val.each do |aliaz|
+        Service.by_selector[aliaz] = Service.by_selector[name]
+        Service.by_name[aliaz] = Service.by_name[name]
+      end
       @also |= val
     end
     
@@ -170,6 +186,7 @@ module Freyr
         Freyr.logger.debug("adding file")  {file}
         return [] unless File.exist?(file)
         @added_services = []
+        @namespace = nil
         instance_eval(File.open(file).read,file,0)
         @added_services
       end
@@ -186,24 +203,22 @@ module Freyr
       
       def group name, *services
         services.each do |s|
-          services = Service[s]
-          if services
-            services.each do |service|
-              service.service_info.group(name)
-            end
-          else
-            STDERR.puts "Service #{s} not found, can't add to group #{name} as attempted in #{@file_path}"
+          service s do
+            group name
           end
         end
       end
       
       def service name=nil, &blk
         name = "#{@namespace}:#{name}" if @namespace
-        if service = Service[name]
-          service.info.instance_eval(&blk)
+        if service = Service.s[name]
+          service_info = service.info
         else
-          @added_services << new(name,&blk)
+          service_info = new(name)
         end
+        @added_services << service_info
+        service_info.defined_in << @file_path
+        service_info.instance_eval(&blk)
       end
     end
     
