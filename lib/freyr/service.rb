@@ -22,9 +22,9 @@ module Freyr
 
     def pid_file
       @pid_file ||= begin
-        raise NoProcMatch, "please provide proc_match for service #{@info.name}" unless @info.proc_match
+        raise NoProcMatch, "please provide proc_match for service #{@info.name} defined in #{info.defined_in.join(",")}" unless @info.proc_match
         PidFile.new(@info.pid_file,@info.proc_match)
-      end
+      end if info.start
     end
     
     def start!
@@ -44,7 +44,7 @@ module Freyr
     end
     
     def alive?
-      pid_file.alive?
+      pid_file.alive? if pid_file
     end
 
     def call_graph

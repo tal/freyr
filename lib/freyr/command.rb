@@ -3,7 +3,7 @@ module Freyr
   class Command
     extend Forwardable
     
-    attr_reader :name, :service
+    attr_reader :service
     
     def initialize(service, command=nil, args = {})
       @service = service
@@ -17,7 +17,7 @@ module Freyr
     end
     
     def run!
-      return unless command
+      raise "no start command found for service #{name}" unless command
       kill! if service.alive?
       
       require_admin

@@ -36,7 +36,7 @@ module Freyr
       service = get_from_name(name).first
       
       if service
-        if service.ping
+        if service.info.ping
           pinger = Pinger.new(service)
           resp = pinger.ping
           if pinger.success?

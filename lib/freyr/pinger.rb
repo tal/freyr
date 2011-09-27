@@ -47,6 +47,8 @@ module Freyr
       t = Time.now
       @response = Net::HTTP.get_response(uri)
     rescue Errno::ECONNREFUSED
+    rescue Exception => e
+      STDERR.puts "Error fetching #{@url}: #{e}"
     ensure
       @time = Time.now-t
       @response
