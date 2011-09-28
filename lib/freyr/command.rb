@@ -24,11 +24,12 @@ module Freyr
       
       total_time = Time.now
       
+      Freyr.logger.debug("attempting to run command") {command.inspect}
+
       pid = spawn(command)
       
-      Freyr.logger.debug("attempting to run command") {command.inspect}
-      str = "\nStarting #{info.name} with #{command.inspect}"
-      OUT.puts '',"Starting #{info.name} with #{command.inspect}", '='*str.length
+      str = "Starting #{info.name} with #{command.inspect}"
+      OUT.puts '',str, '='*str.length
       Process.detach(pid)
       
       pid = service.pid_file.wait_for_pid
@@ -83,19 +84,33 @@ module Freyr
       raise AdminRequired if info.sudo && !Freyr.is_root?
     end
     
-    def chdir
-      Dir.chdir File.expand_path(info.dir||'/')
+    def chdir &blk
+      if block_given?
+        Dir.chdir(File.expand_path(info.dir),&blk)
+      else
+        Dir.chdir(File.expand_path(info.dir))
+      end
     end
     
     def spawn(command)
       if info.rvm && RVM.installed?
-        Freyr.logger.debug('attempting to set rvm') {info.rvm}
-        if RVM.installed?(info.rvm)
-          command = "rvm #{info.rvm} exec #{command}"
-          Freyr.logger.debug('changed command to') {command}
-        else
-          abort("must setup rvm correctly, run: rvm --install --create #{info.rvm}")
+        Freyr.logger.debug("rvm insalled")
+        chdir do
+          if File.exist? '.rvmrc'
+            Freyr.logger.debug('adding rvmrc to source')
+            command = "source .rvmrc && #{command}"
+            Freyr.logger.debug('changed command to') {command}
+          else
+            Freyr.logger.debug('attempting to set rvm') {info.rvm}
+            if RVM.installed?(info.rvm)
+              command = "rvm #{info.rvm} exec #{command}"
+              Freyr.logger.debug('changed command to') {command}
+            else
+              abort("must setup rvm correctly, run: rvm --install --create #{info.rvm}")
+            end
+          end
         end
+
       elsif info.rvm
         Freyr.logger.debug("rvm not installed so can't switch to") {info.rvm}
       end

@@ -19,3 +19,5 @@ service :sudosleep do
   start 'sudo sleep 20'
   proc_match /sleep 20/
 end
+
+group :foo, :sleep, :foobar

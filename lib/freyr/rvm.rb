@@ -14,19 +14,14 @@ module Freyr
     end
 
     def rubies
-      @rubies ||= `rvm list`.strip.split("\n").collect do |line|
-        next unless line =~ /^(\s{3}|=)/
-        line.strip.sub(/\=\>\s/,'').sub(/\s\[.+\]$/,'')
-      end.compact
+      @rubies ||= `rvm list strings`.chomp.split("\n")
     end
 
     def gemsets_for ruby
       @gemsets_for ||= Hash.new do |h,ruby|
-        output = `rvm #{ruby} exec rvm gemset list`.strip.split("\n")
-        output.shift
+        output = `rvm #{ruby} exec rvm gemset list strings`.chomp.split("\n")
         h[ruby] = output.collect do |line|
-          next unless line =~ /^(\s{3}|=)/
-          line.strip.sub(/\=\>\s/,'')
+          line.strip.sub(/\s\(.+\)/,'')
         end.compact
       end
       @gemsets_for[ruby]

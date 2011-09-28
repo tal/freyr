@@ -42,7 +42,7 @@ module Freyr
     end
 
     def wait_for_pid wait = 40, interval=0.2
-      OUT.puts "Waiting #{wait}s for pid from match of #{@procname}"
+      OUT.puts "Waiting #{wait}s for pid from match of #{@procname.inspect}"
 
       start = Time.now
 
